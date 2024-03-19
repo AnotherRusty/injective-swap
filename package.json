@@ -1,0 +1,21 @@
+{
+  "dependencies": {
+    "@cosmjs/cosmwasm-stargate": "^0.32.3",
+    "@cosmjs/proto-signing": "^0.32.3",
+    "@cosmjs/stargate": "^0.32.3",
+    "@injectivelabs/networks": "^1.14.6",
+    "@injectivelabs/sdk-ts": "^1.14.7",
+    "@injectivelabs/utils": "^1.14.6",
+    "secp256k1": "^5.0.0",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.4.2"
+  },
+  "scripts": {
+    "tx": "npx ts-node injswap.ts"
+  },
+  "name": "inj-swap",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT"
+}
