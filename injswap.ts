@@ -8,12 +8,16 @@ import {
   TxClient,
   TxGrpcClient,
   MsgExecuteContract,
-  MsgExecuteContractCompat
+  MsgExecuteContractCompat,
+  InjectiveEthSecp256k1Wallet,
+  InjectiveDirectEthSecp256k1Wallet,
+  msgsOrMsgExecMsgs
 } from '@injectivelabs/sdk-ts'
 import {
   DEFAULT_STD_FEE,
   DEFAULT_BLOCK_TIMEOUT_HEIGHT,
   BigNumberInBase,
+  formatWalletAddress
 } from '@injectivelabs/utils'
 import { ChainId } from '@injectivelabs/ts-types'
 import { Network, getNetworkEndpoints, getNetworkInfo } from '@injectivelabs/networks'
@@ -31,9 +35,9 @@ const amount = {
   denom: 'inj',
 }
 
-const swap = async () => {
+const swapDojo = async () => {
   try {
-
+    console.log('start')
     /** Account Details **/
     const chainRestAuthApi = new ChainRestAuthApi(restEndpoint)
     const accountDetailsResponse = await chainRestAuthApi.fetchAccount(
@@ -59,25 +63,119 @@ const swap = async () => {
       amount: 10
     }
 
-    const belief_price = 10
-    const max_spread = 10
-    const to = injectiveAddress
-    const deadline = 100000000000000
-    /** Preparing the transaction */
-    const swapMsg = MsgExecuteContract.fromJSON({
-      contractAddress: 'inj1t6g03pmc0qcgr7z44qjzaen804f924xke6menl',
-      sender: injectiveAddress,
+    // const jsonmsg = {
+    //   "execute_swap_operations": {
+    //   "operations": [
+    //     {
+    //       "dojo_swap": {
+    //         "offer_asset_info": {
+    //           "native_token": {
+    //             "denom": "inj"
+    //           }
+    //         },
+    //         "ask_asset_info": {
+    //           "token": {
+    //             "contract_addr": "inj1aexws9pf9g0h3032fvdmxd3a9l2u9ex9aklugs"
+    //           }
+    //         }
+    //       }
+    //     },
+    //     {
+    //       "dojo_swap": {
+    //         "offer_asset_info": {
+    //           "token": {
+    //             "contract_addr": "inj1aexws9pf9g0h3032fvdmxd3a9l2u9ex9aklugs"
+    //           }
+    //         },
+    //         "ask_asset_info": {
+    //           "token": {
+    //             "contract_addr": "inj1l49685vnk88zfw2egf6v65se7trw2497wsqk65"
+    //           }
+    //         }
+    //       }
+    //     },
+    //     {
+    //       "dojo_swap": {
+    //         "offer_asset_info": {
+    //           "token": {
+    //             "contract_addr": "inj1l49685vnk88zfw2egf6v65se7trw2497wsqk65"
+    //           }
+    //         },
+    //         "ask_asset_info": {
+    //           "token": {
+    //             "contract_addr": "inj1zdj9kqnknztl2xclm5ssv25yre09f8908d4923"
+    //           }
+    //         }
+    //       }
+    //     }
+    //   ],
+    //   // "minimum_receive": "1000",
+    //   // "deadline": 1711137193,
+    //   },
+    //   "sender": 'inj15579l82y9yt8cgnrw3pqc8ur26j55jpdmwde5k',
+    //   "contractAddress": 'inj12eca9xszt84qm9tztyuje96nn3v2wd3v4yrzge'
+    // }
+    const jsonmsg = {
+      // funds: {
+      //   denom: string;
+      //   amount: string;
+      // } | {
+      //   denom: string;
+      //   amount: string;
+      // }[];
+      sender: 'inj15579l82y9yt8cgnrw3pqc8ur26j55jpdmwde5k',
+      contractAddress: 'inj12eca9xszt84qm9tztyuje96nn3v2wd3v4yrzge',
+      // execArgs?: ExecArgs;
       exec: {
-        action: 'Swap',
-        msg: {
-          offer_asset,
-          belief_price,
-          max_spread,
-          to,
-          deadline
-        }
+        msg: [
+          {
+            "dojo_swap": {
+              "offer_asset_info": {
+                "native_token": {
+                  "denom": "inj"
+                }
+              },
+              "ask_asset_info": {
+                "token": {
+                  "contract_addr": "inj1aexws9pf9g0h3032fvdmxd3a9l2u9ex9aklugs"
+                }
+              }
+            }
+          },
+          {
+            "dojo_swap": {
+              "offer_asset_info": {
+                "token": {
+                  "contract_addr": "inj1aexws9pf9g0h3032fvdmxd3a9l2u9ex9aklugs"
+                }
+              },
+              "ask_asset_info": {
+                "token": {
+                  "contract_addr": "inj1l49685vnk88zfw2egf6v65se7trw2497wsqk65"
+                }
+              }
+            }
+          },
+          {
+            "dojo_swap": {
+              "offer_asset_info": {
+                "token": {
+                  "contract_addr": "inj1l49685vnk88zfw2egf6v65se7trw2497wsqk65"
+                }
+              },
+              "ask_asset_info": {
+                "token": {
+                  "contract_addr": "inj1zdj9kqnknztl2xclm5ssv25yre09f8908d4923"
+                }
+              }
+            }
+          }
+        ],
+        action: 'Swap'
       }
-    })
+    }
+
+    const swapMsg = MsgExecuteContract.fromJSON(jsonmsg)
 
     console.log('msg -> \n', swapMsg)
 
@@ -100,12 +198,13 @@ const swap = async () => {
     txRaw.signatures = [signature];
 
     /** Calculate hash of the transaction */
+    console.log(`txRaw: ${JSON.stringify(txRaw)}`);
     console.log(`Transaction Hash: ${TxClient.hash(txRaw)}`);
 
     const txService = new TxGrpcClient(network.grpc);
     const detailKeys = Object.keys(txService);
     const detailValues = Object.values(txService);
-    console.log(detailValues, '\n', detailKeys)
+    // console.log('detailValues', await detailValues[1].Simulate(txRaw))
 
     console.log(`txService: ${txService}`);
     /** Simulate transaction */
@@ -135,4 +234,4 @@ const swap = async () => {
   }
 }
 
-swap()
+swapDojo()
